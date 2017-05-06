@@ -19,8 +19,6 @@ if os.name == 'nt':
 	import win32security
 
 from TreeViewFile import TreeViewFile
-from Aafm import Aafm
-
 
 class Aafm_GUI:
 
@@ -38,7 +36,6 @@ class Aafm_GUI:
 	def __init__(self):
 		
 		# The super core
-		self.aafm = Aafm('adb', os.getcwd(), '/mnt/sdcard/')
 		self.queue = []
 
 		self.basedir = os.path.dirname(os.path.abspath(__file__))
@@ -73,9 +70,6 @@ class Aafm_GUI:
 
 		itemQuit = builder.get_object('itemQuit')
 		itemQuit.connect('activate', gtk.main_quit)
-
-		self.menuDevices = builder.get_object('menuDevices')
-		self.refresh_menu_devices()
 
 		# Host and device TreeViews
 		
@@ -112,48 +106,12 @@ class Aafm_GUI:
 		self.hostName = socket.gethostname()
 
 
-		# DEVICE
-		self.device_treeViewFile = TreeViewFile(imageDir.get_pixbuf(), imageFile.get_pixbuf())
-		
-		deviceFrame = builder.get_object('frameDevice')
-		deviceFrame.get_child().add(self.device_treeViewFile.get_view())
-
-		deviceTree = self.device_treeViewFile.get_tree()
-		deviceTree.connect('row-activated', self.device_navigate_callback)
-		deviceTree.connect('button_press_event', self.on_device_tree_view_contextual_menu)
-
-		device_targets = [
-			('DRAG_SELF', gtk.TARGET_SAME_WIDGET, 0),
-			('ADB_text', 0, 1),
-			('XdndDirectSave0', 0, 2),
-			('text/plain', 0, 3)
-		]
-
-		deviceTree.enable_model_drag_dest(
-			device_targets,
-			gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY | gtk.gdk.ACTION_MOVE
-		)
-		deviceTree.connect('drag-data-received', self.on_device_drag_data_received)
-		
-		deviceTree.enable_model_drag_source(
-			gtk.gdk.BUTTON1_MASK,
-			device_targets,
-			gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY | gtk.gdk.ACTION_MOVE
-		)
-		deviceTree.connect('drag-data-get', self.on_device_drag_data_get)
-		deviceTree.connect('drag-begin', self.on_device_drag_begin)
-		
-		self.deviceFrame = deviceFrame
-
-
 		# Progress bar
 		self.progress_bar = builder.get_object('progressBar')
 
 		# Some more subtle details...
 		self.window.set_title("Android ADB file manager")
-		#self.adb = 'adb'
 		self.host_cwd = os.getcwd()
-		self.aafm.set_device_cwd('/mnt/sdcard/')
 
 		self.refresh_all()
 
@@ -165,42 +123,6 @@ class Aafm_GUI:
 		# And we're done!
 		self.window.show_all()
 
-	def refresh_menu_devices(self, widget=None):
-		before = self.aafm.get_device_serial()
-		self.aafm.refresh_devices()
-		selected = self.aafm.get_device_serial()
-		if before != selected:
-			self.aafm.set_device_cwd('/mnt/sdcard/')
-			self.refresh_device_files()
-
-		def on_menu_item_toggled(item, serial):
-			if item.get_active():
-				self.aafm.set_device_serial(serial)
-				self.aafm.set_device_cwd('/mnt/sdcard/')
-				self.refresh_device_files()
-
-		menu = self.menuDevices
-		submenu = gtk.Menu()
-		group = None
-		for serial, name in self.aafm.get_devices():
-			item = gtk.RadioMenuItem(group, '%s (%s)' % (name, serial))
-			if serial == selected:
-				item.set_active(True)
-
-			item.connect('toggled', on_menu_item_toggled, serial)
-			if group is None:
-				group = item
-			submenu.append(item)
-		if group is None:
-			item = gtk.MenuItem('No devices found')
-			item.set_sensitive(False)
-			submenu.append(item)
-		submenu.append(gtk.SeparatorMenuItem())
-		item = gtk.MenuItem('Refresh device list')
-		item.connect('activate', self.refresh_menu_devices)
-		submenu.append(item)
-		menu.set_submenu(submenu)
-		menu.show_all()
 
 
 
@@ -214,34 +136,16 @@ class Aafm_GUI:
 
 		if is_dir:
 			self.host_cwd = os.path.normpath(os.path.join(self.host_cwd, name))
-			self.aafm.set_host_cwd(self.host_cwd)
 			self.refresh_host_files()
 
 
-	def device_navigate_callback(self, widget, path, view_column):
-
-		row = path[0]
-		model = widget.get_model()
-		iter = model.get_iter(row)
-		is_dir = model.get_value(iter, 0)
-		name = model.get_value(iter, 1)
-
-		if is_dir:
-			self.aafm.set_device_cwd(self.aafm.device_path_normpath(self.aafm.device_path_join(self.aafm.device_cwd, name)))
-			self.refresh_device_files()
 
 	def refresh_all(self, widget=None):
 		self.refresh_host_files()
-		self.refresh_device_files()
 	
 	def refresh_host_files(self):
 		self.host_treeViewFile.load_data(self.dir_scan_host(self.host_cwd))
 		self.hostFrame.set_label('%s:%s' % (self.hostName, self.host_cwd))
-
-
-	def refresh_device_files(self):
-		self.device_treeViewFile.load_data(self.dir_scan_device(self.aafm.device_cwd))
-		self.deviceFrame.set_label('%s:%s (%s free)' % ('device', self.aafm.device_cwd, self.aafm.get_free_space()))
 
 
 	def get_treeviewfile_selected(self, treeviewfile):
@@ -375,55 +279,6 @@ class Aafm_GUI:
 		d = datetime.datetime.fromtimestamp(timestamp)
 		return d.strftime(r'%Y-%m-%d %H:%M')
 
-	""" Like dir_scan_host, but in the connected Android device """
-	def dir_scan_device(self, directory):
-		output = []
-		
-		entries = self.aafm.get_device_file_list()
-
-		dirs = []
-		files = []
-
-		for filename, entry in entries.iteritems():
-			if entry['is_directory']:
-				dirs.append(filename)
-			else:
-				files.append(filename)
-
-		if not self.showHidden:
-			files = [f for f in files if not f[0] == '.']
-			dirs = [d for d in dirs if not d[0] == '.']
-
-		dirs.sort()
-		files.sort()
-
-		output.append({'directory': True, 'name': '..', 'size': 0, 'timestamp': '', 'permissions': '', 'owner': '', 'group': ''})
-
-		for d in dirs:
-			output.append({
-				'directory': True,
-				'name': d,
-				'size': 0,
-				'timestamp': self.format_timestamp(entries[d]['timestamp']), 
-				'permissions': entries[d]['permissions'],
-				'owner': entries[d]['owner'],
-				'group': entries[d]['group']
-			})
-
-		for f in files:
-			size = int(entries[f]['size'])
-			output.append({
-				'directory': False,
-				'name': f,
-				'size': size,
-				'timestamp': self.format_timestamp(entries[f]['timestamp']),
-				'permissions': entries[f]['permissions'],
-				'owner': entries[f]['owner'],
-				'group': entries[f]['group']
-			})
-
-		return output
-
 
 	def on_toggle_hidden(self, widget):
 		self.showHidden = widget.get_active()
@@ -462,14 +317,6 @@ class Aafm_GUI:
 		# Not consuming the event
 		return False
 
-	# Copy to device
-	def on_host_copy_to_device_callback(self, widget):
-		for row in self.get_host_selected_files():
-			src = os.path.join(self.host_cwd, row['filename'])
-			self.add_to_queue(self.QUEUE_ACTION_COPY_TO_DEVICE, src, self.aafm.device_cwd)
-		self.process_queue()
-
-	
 	# Create host directory
 	def on_host_create_directory_callback(self, widget):
 		directory_name = self.dialog_get_directory_name()
@@ -551,27 +398,6 @@ class Aafm_GUI:
 		# don't consume the event, so we can still double click to navigate
 		return False
 
-	def on_device_delete_item_callback(self, widget):
-		selected = self.get_device_selected_files()
-
-		items = []
-
-		for item in selected:
-			items.append(item['filename'])
-
-		result = self.dialog_delete_confirmation(items)
-
-		if result == gtk.RESPONSE_OK:
-			for item in items:
-				full_item_path = self.aafm.device_path_join(self.aafm.device_cwd, item)
-				for func, args in self.aafm.device_delete_item(full_item_path):
-					self.add_to_queue(self.QUEUE_ACTION_CALLABLE, func, args)
-				self.add_to_queue(self.QUEUE_ACTION_CALLABLE, self.refresh_device_files, ())
-				self.process_queue()
-		else:
-			print('no no')
-
-
 	def dialog_delete_confirmation(self, items):
 		items.sort()
 		joined = ', '.join(items)
@@ -588,18 +414,6 @@ class Aafm_GUI:
 		
 		dialog.destroy()
 		return result
-
-	def on_device_create_directory_callback(self, widget):
-		directory_name = self.dialog_get_directory_name()
-
-		# dialog was cancelled
-		if directory_name is None:
-			return
-
-		full_path = self.aafm.device_path_join(self.aafm.device_cwd, directory_name)
-		self.aafm.device_make_directory(full_path)
-		self.refresh_device_files()
-
 
 	def dialog_get_directory_name(self):
 		dialog = gtk.MessageDialog(
@@ -646,31 +460,6 @@ class Aafm_GUI:
 		gobject.idle_add(task.next)
 
 
-	def copy_from_device_task(self, rows):
-		for row in rows:
-			filename = row['filename']
-
-			full_device_path = self.aafm.device_path_join(self.aafm.device_cwd, filename)
-			full_host_path = self.host_cwd
-
-			self.add_to_queue(self.QUEUE_ACTION_COPY_FROM_DEVICE, full_device_path, full_host_path)
-
-		self.process_queue()
-		yield False
-
-	def on_device_rename_item_callback(self, widget):
-		old_name = self.get_device_selected_files()[0]['filename']
-		new_name = self.dialog_get_item_name(old_name)
-
-		if new_name is None:
-			return
-
-		full_src_path = self.aafm.device_path_join(self.aafm.device_cwd, old_name)
-		full_dst_path = self.aafm.device_path_join(self.aafm.device_cwd, new_name)
-
-		self.aafm.device_rename_item(full_src_path, full_dst_path)
-		self.refresh_device_files()
-	
 	def dialog_get_item_name(self, old_name):
 		dialog = gtk.MessageDialog(
 			None,
@@ -764,64 +553,6 @@ class Aafm_GUI:
 		context.source_window.property_change(self.XDS_ATOM, self.TEXT_ATOM, 8, gtk.gdk.PROP_MODE_REPLACE, self.XDS_FILENAME)
 	
 
-	def on_device_drag_data_get(self, widget, context, selection, target_type, time):
-		
-		if selection.target == 'XdndDirectSave0':
-			type, format, destination_file = context.source_window.property_get(self.XDS_ATOM, self.TEXT_ATOM)
-
-			if destination_file.startswith('file://'):
-				destination = os.path.dirname(urllib.unquote(destination_file).replace('file://', '', 1))
-				for item in self.get_device_selected_files():
-					self.add_to_queue(self.QUEUE_ACTION_COPY_FROM_DEVICE, self.aafm.device_path_join(self.aafm.device_cwd, item['filename']), destination)
-
-				self.process_queue()
-			else:
-				print("ERROR: Destination doesn't start with file://?!!?")
-
-
-		else:
-			selection.set(selection.target, 8, '\n'.join(['file://' + urllib.quote(self.aafm.device_path_join(self.aafm.device_cwd, item['filename'])) for item in self.get_device_selected_files()]))
-	
-
-	def on_device_drag_data_received(self, tree_view, context, x, y, selection, info, timestamp):
-
-		data = selection.data
-		type = selection.type
-		drop_info = tree_view.get_dest_row_at_pos(x, y)
-		destination = self.aafm.device_cwd
-		
-		# When dropped over a row
-		if drop_info:
-			model = tree_view.get_model()
-			path, position = drop_info
-			
-			if position in [ gtk.TREE_VIEW_DROP_INTO_OR_BEFORE, gtk.TREE_VIEW_DROP_INTO_OR_AFTER ]:
-				iter = model.get_iter(path)
-				is_directory = model.get_value(iter, 0)
-				name = model.get_value(iter, 1)
-
-				# If dropping over a folder, copy things to that folder
-				if is_directory:
-					destination = self.aafm.device_path_join(self.aafm.device_cwd, name)
-
-		if type == 'DRAG_SELF':
-			if self.aafm.device_cwd != destination:
-				for line in [line.strip() for line in data.split('\n')]:
-					if line.startswith('file://'):
-						source = urllib.unquote(line.replace('file://', '', 1))
-						if source != destination:
-							name = self.aafm.device_path_basename(source)
-							self.add_to_queue(self.QUEUE_ACTION_MOVE_IN_DEVICE, source, os.path.join(destination, name))
-		else:
-			# COPY stuff
-			for line in [line.strip() for line in data.split('\n')]:
-				if line.startswith('file://'):
-					source = urllib.unquote(line.replace('file://', '', 1))
-					self.add_to_queue(self.QUEUE_ACTION_COPY_TO_DEVICE, source, destination)
-		
-		self.process_queue()
-
-
 	def add_to_queue(self, action, src_file, dst_path):
 		self.queue.append([action, src_file, dst_path])
 	
@@ -830,37 +561,37 @@ class Aafm_GUI:
 		task = self.process_queue_task()
 		gobject.idle_add(task.next)
 	
-	def process_queue_task(self):
-		completed = 0
-		self.update_progress()
-
-		while len(self.queue) > 0:
-			item = self.queue.pop(0)
-			action, src, dst = item
-
-			if action == self.QUEUE_ACTION_COPY_TO_DEVICE:
-				for func, args in self.aafm.generate_copy_to_device_tasks(src, dst):
-					self.add_to_queue(self.QUEUE_ACTION_CALLABLE, func, args)
-				self.add_to_queue(self.QUEUE_ACTION_CALLABLE, self.refresh_device_files, ())
-			elif action == self.QUEUE_ACTION_COPY_FROM_DEVICE:
-				for func, args in self.aafm.generate_copy_to_host_tasks(src, dst):
-					self.add_to_queue(self.QUEUE_ACTION_CALLABLE, func, args)
-				self.add_to_queue(self.QUEUE_ACTION_CALLABLE, self.refresh_host_files, ())
-			elif action == self.QUEUE_ACTION_CALLABLE:
-				src(*dst)
-			elif action == self.QUEUE_ACTION_MOVE_IN_DEVICE:
-				self.aafm.device_rename_item(src, dst)
-				self.refresh_device_files()
-			elif action == self.QUEUE_ACTION_MOVE_IN_HOST:
-				shutil.move(src, dst)
-				self.refresh_host_files()
-
-			completed += 1
-			self.update_progress(float(completed) / float(completed + len(self.queue)))
-
-			yield True
-
-		yield False
+#	def process_queue_task(self):
+#		completed = 0
+#		self.update_progress()
+#
+#		while len(self.queue) > 0:
+#			item = self.queue.pop(0)
+#			action, src, dst = item
+#
+#			if action == self.QUEUE_ACTION_COPY_TO_DEVICE:
+#				for func, args in self.aafm.generate_copy_to_device_tasks(src, dst):
+#					self.add_to_queue(self.QUEUE_ACTION_CALLABLE, func, args)
+#				self.add_to_queue(self.QUEUE_ACTION_CALLABLE, self.refresh_device_files, ())
+#			elif action == self.QUEUE_ACTION_COPY_FROM_DEVICE:
+#				for func, args in self.aafm.generate_copy_to_host_tasks(src, dst):
+#					self.add_to_queue(self.QUEUE_ACTION_CALLABLE, func, args)
+#				self.add_to_queue(self.QUEUE_ACTION_CALLABLE, self.refresh_host_files, ())
+#			elif action == self.QUEUE_ACTION_CALLABLE:
+#				src(*dst)
+#			elif action == self.QUEUE_ACTION_MOVE_IN_DEVICE:
+#				self.aafm.device_rename_item(src, dst)
+#				self.refresh_device_files()
+#			elif action == self.QUEUE_ACTION_MOVE_IN_HOST:
+#				shutil.move(src, dst)
+#				self.refresh_host_files()
+#
+#			completed += 1
+#			self.update_progress(float(completed) / float(completed + len(self.queue)))
+#
+#			yield True
+#
+#		yield False
 
 
 
