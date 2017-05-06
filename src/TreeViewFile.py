@@ -28,7 +28,7 @@ class TreeViewFile:
 		type_col.set_cell_data_func(type_col_renderer_pixbuf, self.render_dir_or_file)
 
 		# NAME
-		name_col = gtk.TreeViewColumn('File name')
+		name_col = gtk.TreeViewColumn('Name')
 		self.tree_view.append_column(name_col)
 		
 		name_col_renderer_text = gtk.CellRendererText()

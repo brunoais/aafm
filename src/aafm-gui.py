@@ -107,7 +107,7 @@ class Aafm_GUI:
 		self.progress_bar = builder.get_object('progressBar')
 
 		# Some more subtle details...
-		self.window.set_title("Android ADB file manager")
+		self.window.set_title("File Manager")
 		self.host_cwd = os.getcwd()
 
 		self.refresh_all()
