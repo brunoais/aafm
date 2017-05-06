@@ -22,10 +22,7 @@ from TreeViewFile import TreeViewFile
 
 class Aafm_GUI:
 
-	QUEUE_ACTION_COPY_TO_DEVICE = 'copy_to_device'
-	QUEUE_ACTION_COPY_FROM_DEVICE = 'copy_from_device'
 	QUEUE_ACTION_CALLABLE = 'callable'
-	QUEUE_ACTION_MOVE_IN_DEVICE = 'move_in_device'
 	QUEUE_ACTION_MOVE_IN_HOST = 'move_in_host'
 
 	# These constants are for dragging files to Nautilus
@@ -71,7 +68,7 @@ class Aafm_GUI:
 		itemQuit = builder.get_object('itemQuit')
 		itemQuit.connect('activate', gtk.main_quit)
 
-		# Host and device TreeViews
+		# Host TreeViews
 		
 		# HOST
 		self.host_treeViewFile = TreeViewFile(imageDir.get_pixbuf(), imageFile.get_pixbuf())
@@ -163,10 +160,6 @@ class Aafm_GUI:
 
 	def get_host_selected_files(self):
 		return self.get_treeviewfile_selected(self.host_treeViewFile)
-
-	def get_device_selected_files(self):
-		return self.get_treeviewfile_selected(self.device_treeViewFile)
-
 
 	""" Walks through a directory and return the data in a tree-style list 
 		that can be used by the TreeViewFile """
@@ -291,7 +284,6 @@ class Aafm_GUI:
 			builder.add_from_file(os.path.join(self.basedir, 'data/glade/menu_contextual_host.xml'))
 			menu = builder.get_object('menu')
 			builder.connect_signals({
-				'on_menuHostCopyToDevice_activate': self.on_host_copy_to_device_callback,
 				'on_menuHostCreateDirectory_activate': self.on_host_create_directory_callback,
 				'on_menuHostRefresh_activate': self.on_host_refresh_callback,
 				'on_menuHostDeleteItem_activate': self.on_host_delete_item_callback,
@@ -301,9 +293,6 @@ class Aafm_GUI:
 			# Ensure only right options are available
 			num_selected = len(self.get_host_selected_files())
 			has_selection = num_selected > 0
-
-			menuCopy = builder.get_object('menuHostCopyToDevice')
-			menuCopy.set_sensitive(has_selection)
 
 			menuDelete = builder.get_object('menuHostDeleteItem')
 			menuDelete.set_sensitive(has_selection)
@@ -367,37 +356,6 @@ class Aafm_GUI:
 		shutil.move(full_src_path, full_dst_path)
 		self.refresh_host_files()
 
-	def on_device_tree_view_contextual_menu(self, widget, event):
-		if event.button == 3: # Right click
-			builder = gtk.Builder()
-			builder.add_from_file(os.path.join(self.basedir, "data/glade/menu_contextual_device.xml"))
-			menu = builder.get_object("menu")
-			builder.connect_signals({
-				'on_menuDeviceDeleteItem_activate': self.on_device_delete_item_callback,
-				'on_menuDeviceCreateDirectory_activate': self.on_device_create_directory_callback,
-				'on_menuDeviceRefresh_activate': self.on_device_refresh_callback,
-				'on_menuDeviceCopyToComputer_activate': self.on_device_copy_to_computer_callback,
-				'on_menuDeviceRenameItem_activate': self.on_device_rename_item_callback
-			})
-
-			# Ensure only right options are available
-			num_selected = len(self.get_device_selected_files())
-			has_selection = num_selected > 0
-			menuDelete = builder.get_object('menuDeviceDeleteItem')
-			menuDelete.set_sensitive(has_selection)
-			
-			menuCopy = builder.get_object('menuDeviceCopyToComputer')
-			menuCopy.set_sensitive(has_selection)
-
-			menuRename = builder.get_object('menuDeviceRenameItem')
-			menuRename.set_sensitive(num_selected == 1)
-
-			menu.popup(None, None, None, event.button, event.time)
-			return True
-		
-		# don't consume the event, so we can still double click to navigate
-		return False
-
 	def dialog_delete_confirmation(self, items):
 		items.sort()
 		joined = ', '.join(items)
@@ -448,16 +406,6 @@ class Aafm_GUI:
 
 	def dialog_response(self, entry, dialog, response):
 		dialog.response(response)
-
-
-	def on_device_refresh_callback(self, widget):
-		self.refresh_device_files()
-
-
-	def on_device_copy_to_computer_callback(self, widget):
-		selected = self.get_device_selected_files()
-		task = self.copy_from_device_task(selected)
-		gobject.idle_add(task.next)
 
 
 	def dialog_get_item_name(self, old_name):
@@ -547,11 +495,6 @@ class Aafm_GUI:
 		self.process_queue()
 
 
-
-	def on_device_drag_begin(self, widget, context):
-		
-		context.source_window.property_change(self.XDS_ATOM, self.TEXT_ATOM, 8, gtk.gdk.PROP_MODE_REPLACE, self.XDS_FILENAME)
-	
 
 	def add_to_queue(self, action, src_file, dst_path):
 		self.queue.append([action, src_file, dst_path])
