@@ -20,7 +20,7 @@ if os.name == 'nt':
 
 from TreeViewFile import TreeViewFile
 
-class Aafm_GUI:
+class gui:
 	QUEUE_ACTION_CALLABLE = 'callable'
 	QUEUE_ACTION_MOVE_IN_HOST = 'move_in_host'
 
@@ -323,29 +323,47 @@ class Aafm_GUI:
 		self.showHidden = widget.get_active()
 		self.refresh_host_files()
 
+	def create_context_menu(self):
+		context_menu = gtk.Menu()
+
+		menuHostCreateDirectory = gtk.MenuItem("Create directory...")
+		menuHostCreateDirectory.connect("activate", self.on_host_create_directory_callback)
+		menuHostCreateDirectory.show()
+
+		menuHostRefresh = gtk.MenuItem("Refresh")
+		menuHostRefresh.connect("activate", self.on_host_refresh_callback)
+		menuHostRefresh.show()
+
+		menuHostDeleteItem = gtk.MenuItem("Delete...")
+		menuHostDeleteItem.connect("activate", self.on_host_delete_item_callback)
+		menuHostDeleteItem.show()
+
+		menuHostRenameItem = gtk.MenuItem("Rename...")
+		menuHostRenameItem.connect("activate", self.on_host_rename_item_callback)
+		menuHostRenameItem.show()
+
+		sep = gtk.SeparatorMenuItem()
+		sep.show()
+
+		context_menu.append(menuHostCreateDirectory)
+		context_menu.append(sep)
+		context_menu.append(menuHostRefresh)
+		context_menu.append(menuHostDeleteItem)
+		context_menu.append(menuHostRenameItem)
+
+		# Greyout unavailable options
+		num_selected = len(self.get_host_selected_files())
+		has_selection = num_selected > 0
+
+		menuHostDeleteItem.set_sensitive(has_selection)
+		menuHostRenameItem.set_sensitive(num_selected == 1)	
+
+		return context_menu
+	
 	def on_host_tree_view_contextual_menu(self, widget, event):
 		if event.button == 3: # Right click
-			builder = gtk.Builder()
-			builder.add_from_file(os.path.join(self.basedir, 'data/glade/menu_contextual_host.xml'))
-			menu = builder.get_object('menu')
-			builder.connect_signals({
-				'on_menuHostCreateDirectory_activate': self.on_host_create_directory_callback,
-				'on_menuHostRefresh_activate': self.on_host_refresh_callback,
-				'on_menuHostDeleteItem_activate': self.on_host_delete_item_callback,
-				'on_menuHostRenameItem_activate': self.on_host_rename_item_callback
-			})
-
-			# Ensure only right options are available
-			num_selected = len(self.get_host_selected_files())
-			has_selection = num_selected > 0
-
-			menuDelete = builder.get_object('menuHostDeleteItem')
-			menuDelete.set_sensitive(has_selection)
-
-			menuRename = builder.get_object('menuHostRenameItem')
-			menuRename.set_sensitive(num_selected == 1)	
-
-			menu.popup(None, None, None, event.button, event.time)
+			context_menu=self.create_context_menu()
+			context_menu.popup(None, None, None, event.button, event.time)
 			return True
 		
 		# Not consuming the event
@@ -619,5 +637,5 @@ class Aafm_GUI:
 		gtk.main()
 
 if __name__ == '__main__':
-	gui = Aafm_GUI()
+	gui = gui()
 	gui.main()
