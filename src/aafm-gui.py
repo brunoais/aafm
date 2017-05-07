@@ -21,7 +21,6 @@ if os.name == 'nt':
 from TreeViewFile import TreeViewFile
 
 class Aafm_GUI:
-
 	QUEUE_ACTION_CALLABLE = 'callable'
 	QUEUE_ACTION_MOVE_IN_HOST = 'move_in_host'
 
@@ -31,11 +30,10 @@ class Aafm_GUI:
 	XDS_FILENAME = 'whatever.txt'
 
 	def __init__(self):
-		
-		# The super core
 		self.queue = []
 
 		self.basedir = os.path.dirname(os.path.abspath(__file__))
+		self.showHidden = True # Show hidden files and folders
 		
 		if os.name == 'nt':
 			self.get_owner = self._get_owner_windows
@@ -44,38 +42,52 @@ class Aafm_GUI:
 			self.get_owner = self._get_owner
 			self.get_group = self._get_group
 
-		# Build main window from XML
-		builder = gtk.Builder()
-		builder.add_from_file(os.path.join(self.basedir, "data/glade/interface.xml"))
-		builder.connect_signals({ "on_window_destroy" : gtk.main_quit })
-		self.window = builder.get_object("window")
+		# Build main window
+		self.window=gtk.Window()
+		self.window.set_title("File Manager")
+		self.window.set_size_request(640, 480)
 
+		# Resources
 		imageDir = gtk.Image()
 		imageDir.set_from_file(os.path.join(self.basedir, './data/icons/folder.png'))
 		imageFile = gtk.Image()
 		imageFile.set_from_file(os.path.join(self.basedir, './data/icons/file.png'))
+
+		# menu bar
+		self.menubar = gtk.MenuBar()
 		
-		# Show hidden files and folders
-		self.showHidden = False
-
-		showHidden = builder.get_object('showHidden')
-		showHidden.connect('toggled', self.on_toggle_hidden)
-
-		# Refresh view
-		refreshView = builder.get_object('refreshView')
-		refreshView.connect('activate', self.refresh_all)
-
-		itemQuit = builder.get_object('itemQuit')
-		itemQuit.connect('activate', gtk.main_quit)
-
-		# Host TreeViews
+		# File menu
+		filemenu = gtk.Menu()
+		filem = gtk.MenuItem("File")
+		filem.set_submenu(filemenu)
 		
-		# HOST
+		exit = gtk.MenuItem("Exit")
+		exit.connect("activate", gtk.main_quit)
+		filemenu.append(exit)
+		
+		self.menubar.append(filem)
+
+		# View menu
+		viewmenu = gtk.Menu()
+		viewm = gtk.MenuItem("View")
+		viewm.set_submenu(viewmenu)
+		
+		showhidden = gtk.CheckMenuItem("showHidden")
+        	showhidden .set_active(True)
+		showhidden.connect('toggled', self.on_toggle_hidden)
+		viewmenu.append(showhidden)
+
+		refreshview = gtk.MenuItem("Refresh")
+		refreshview.connect('activate', self.refresh_all)
+		viewmenu.append(refreshview)
+		
+		self.menubar.append(viewm)
+		
+		# Path label
+		self.label = gtk.Label('Hello World')
+
+		# TreeView
 		self.host_treeViewFile = TreeViewFile(imageDir.get_pixbuf(), imageFile.get_pixbuf())
-		
-		hostFrame = builder.get_object('frameHost')
-		hostFrame.get_child().add(self.host_treeViewFile.get_view())
-		
 		hostTree = self.host_treeViewFile.get_tree()
 		hostTree.connect('row-activated', self.host_navigate_callback)
 		hostTree.connect('button_press_event', self.on_host_tree_view_contextual_menu)
@@ -99,29 +111,33 @@ class Aafm_GUI:
 		)
 		hostTree.connect('drag_data_get', self.on_host_drag_data_get)
 		
-		self.hostFrame = hostFrame
 		self.hostName = socket.gethostname()
 
-
 		# Progress bar
-		self.progress_bar = builder.get_object('progressBar')
+		self.progress_bar = gtk.ProgressBar()
+
+		# status bar
+		self.statusbar = gtk.Statusbar()
+        	self.statusbar.push(1, "Ready")
+
+		# layout
+		vbox = gtk.VBox(False, 2)
+		vbox.pack_start(self.menubar, False, False, 0)
+		vbox.pack_start(self.label, False, False, 0)
+		vbox.pack_start(self.host_treeViewFile.get_view(), True, True, 0)
+		vbox.pack_start(self.progress_bar, False, False, 0)
+		vbox.pack_start(self.statusbar, False, False, 0)
+		
+		self.window.add(vbox)
 
 		# Some more subtle details...
-		self.window.set_title("File Manager")
 		self.host_cwd = os.getcwd()
 
 		self.refresh_all()
 
-		# Make both panels equal in size (at least initially)
-		panelsPaned = builder.get_object('panelsPaned')
-		self.window.show_all()
-		panelsPaned.set_position(panelsPaned.get_allocation().width / 2)
-
 		# And we're done!
+		self.window.connect("destroy", gtk.main_quit)
 		self.window.show_all()
-
-
-
 
 	def host_navigate_callback(self, widget, path, view_column):
 		
@@ -135,15 +151,12 @@ class Aafm_GUI:
 			self.host_cwd = os.path.normpath(os.path.join(self.host_cwd, name))
 			self.refresh_host_files()
 
-
-
 	def refresh_all(self, widget=None):
 		self.refresh_host_files()
 	
 	def refresh_host_files(self):
 		self.host_treeViewFile.load_data(self.dir_scan_host(self.host_cwd))
-		self.hostFrame.set_label('%s:%s' % (self.hostName, self.host_cwd))
-
+		self.label.set_label('%s:%s' % (self.hostName, self.host_cwd))
 
 	def get_treeviewfile_selected(self, treeviewfile):
 		values = []
@@ -156,7 +169,6 @@ class Aafm_GUI:
 			values.append({'filename': filename, 'is_directory': is_directory})
 
 		return values
-
 
 	def get_host_selected_files(self):
 		return self.get_treeviewfile_selected(self.host_treeViewFile)
@@ -267,11 +279,9 @@ class Aafm_GUI:
 	def _get_group_windows(self, filename):
 		return ""
 
-
 	def format_timestamp(self, timestamp):
 		d = datetime.datetime.fromtimestamp(timestamp)
 		return d.strftime(r'%Y-%m-%d %H:%M')
-
 
 	def on_toggle_hidden(self, widget):
 		self.showHidden = widget.get_active()
@@ -318,10 +328,8 @@ class Aafm_GUI:
 			os.mkdir(full_path)
 			self.refresh_host_files()
 
-
 	def on_host_refresh_callback(self, widget):
 		self.refresh_host_files()
-
 
 	def on_host_delete_item_callback(self, widget):
 		selected = self.get_host_selected_files()
@@ -403,10 +411,8 @@ class Aafm_GUI:
 		else:
 			return None
 
-
 	def dialog_response(self, entry, dialog, response):
 		dialog.response(response)
-
 
 	def dialog_get_item_name(self, old_name):
 		dialog = gtk.MessageDialog(
@@ -438,7 +444,6 @@ class Aafm_GUI:
 		else:
 			return None
 
-
 	def update_progress(self, value = None):
 		if value is None:
 			self.progress_bar.set_fraction(0)
@@ -457,13 +462,11 @@ class Aafm_GUI:
 		while gtk.events_pending():
 			gtk.main_iteration(False)
 
-
 	def on_host_drag_data_get(self, widget, context, selection, target_type, time):
 		data = '\n'.join(['file://' + urllib.quote(os.path.join(self.host_cwd, item['filename'])) for item in self.get_host_selected_files()])
 		
 		selection.set(selection.target, 8, data)
 
-	
 	def on_host_drag_data_received(self, tree_view, context, x, y, selection, info, timestamp):
 		data = selection.data
 		type = selection.type
@@ -494,12 +497,9 @@ class Aafm_GUI:
 
 		self.process_queue()
 
-
-
 	def add_to_queue(self, action, src_file, dst_path):
 		self.queue.append([action, src_file, dst_path])
 	
-
 	def process_queue(self):
 		task = self.process_queue_task()
 		gobject.idle_add(task.next)
@@ -536,19 +536,14 @@ class Aafm_GUI:
 #
 #		yield False
 
-
-
 	def die_callback(self, widget, data=None):
 		self.destroy(widget, data)
-
 
 	def destroy(self, widget, data=None):
 		gtk.main_quit()
 
-
 	def main(self):
 		gtk.main()
-
 
 if __name__ == '__main__':
 	gui = Aafm_GUI()
