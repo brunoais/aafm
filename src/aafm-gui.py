@@ -46,6 +46,7 @@ class Aafm_GUI:
 		self.window=gtk.Window()
 		self.window.set_title("File Manager")
 		self.window.set_size_request(640, 480)
+		self.window.connect('key_press_event', self.on_key_press)
 
 		# Resources
 		imageDir = gtk.Image()
@@ -78,13 +79,43 @@ class Aafm_GUI:
 		viewmenu.append(showhidden)
 
 		refreshview = gtk.MenuItem("Refresh")
-		refreshview.connect('activate', self.refresh_all)
+		refreshview.connect('activate', self.refresh_host_files)
 		viewmenu.append(refreshview)
+
+		stat = gtk.CheckMenuItem("View Menubar")
+		stat.set_active(True)
+		stat.connect("activate", self.on_menubar_view)
+		viewmenu.append(stat)
+
+		stat = gtk.CheckMenuItem("View Toolbar")
+		stat.set_active(True)
+		stat.connect("activate", self.on_toolbar_view)
+		viewmenu.append(stat)
+
+		stat = gtk.CheckMenuItem("View Statusbar")
+		stat.set_active(True)
+		stat.connect("activate", self.on_status_view)
+		viewmenu.append(stat)
 		
 		self.menubar.append(viewm)
 		
-		# Path label
-		self.label = gtk.Label('Hello World')
+		# Toolbar
+		self.toolbar = gtk.Toolbar()
+		self.toolbar.set_style(gtk.TOOLBAR_ICONS)
+		
+		newtb = gtk.ToolButton(gtk.STOCK_NEW)
+		opentb = gtk.ToolButton(gtk.STOCK_OPEN)
+		savetb = gtk.ToolButton(gtk.STOCK_SAVE)
+		sep = gtk.SeparatorToolItem()
+		quittb = gtk.ToolButton(gtk.STOCK_QUIT)
+		
+		self.toolbar.insert(newtb, 0)
+		self.toolbar.insert(opentb, 1)
+		self.toolbar.insert(savetb, 2)
+		self.toolbar.insert(sep, 3)
+		self.toolbar.insert(quittb, 4)
+		
+		quittb.connect("clicked", gtk.main_quit)
 
 		# TreeView
 		self.host_treeViewFile = TreeViewFile(imageDir.get_pixbuf(), imageFile.get_pixbuf())
@@ -116,6 +147,9 @@ class Aafm_GUI:
 		# Progress bar
 		self.progress_bar = gtk.ProgressBar()
 
+		# Text Entry
+		self.entry = gtk.Entry()
+
 		# status bar
 		self.statusbar = gtk.Statusbar()
         	self.statusbar.push(1, "Ready")
@@ -123,9 +157,10 @@ class Aafm_GUI:
 		# layout
 		vbox = gtk.VBox(False, 2)
 		vbox.pack_start(self.menubar, False, False, 0)
-		vbox.pack_start(self.label, False, False, 0)
+		vbox.pack_start(self.toolbar, False, False, 0)
 		vbox.pack_start(self.host_treeViewFile.get_view(), True, True, 0)
 		vbox.pack_start(self.progress_bar, False, False, 0)
+		vbox.pack_start(self.entry, False, False, 0)
 		vbox.pack_start(self.statusbar, False, False, 0)
 		
 		self.window.add(vbox)
@@ -133,11 +168,14 @@ class Aafm_GUI:
 		# Some more subtle details...
 		self.host_cwd = os.getcwd()
 
-		self.refresh_all()
+		self.refresh_host_files()
 
 		# And we're done!
 		self.window.connect("destroy", gtk.main_quit)
 		self.window.show_all()
+
+            	self.progress_bar.hide()
+            	self.entry.hide()
 
 	def host_navigate_callback(self, widget, path, view_column):
 		
@@ -151,12 +189,9 @@ class Aafm_GUI:
 			self.host_cwd = os.path.normpath(os.path.join(self.host_cwd, name))
 			self.refresh_host_files()
 
-	def refresh_all(self, widget=None):
-		self.refresh_host_files()
-	
-	def refresh_host_files(self):
+	def refresh_host_files(self, widget=None):
 		self.host_treeViewFile.load_data(self.dir_scan_host(self.host_cwd))
-		self.label.set_label('%s:%s' % (self.hostName, self.host_cwd))
+		self.window.set_title("%s:%s" % (self.hostName, self.host_cwd))
 
 	def get_treeviewfile_selected(self, treeviewfile):
 		values = []
@@ -285,8 +320,7 @@ class Aafm_GUI:
 
 	def on_toggle_hidden(self, widget):
 		self.showHidden = widget.get_active()
-
-		self.refresh_all()
+		self.refresh_host_files()
 
 	def on_host_tree_view_contextual_menu(self, widget, event):
 		if event.button == 3: # Right click
@@ -462,6 +496,30 @@ class Aafm_GUI:
 		while gtk.events_pending():
 			gtk.main_iteration(False)
 
+	def on_minibuffer_view(self, widget):
+		if widget.active: 
+			self.entry.show()
+		else:
+			self.entry.hide()
+
+	def on_menubar_view(self, widget):
+		if widget.active: 
+			self.menubar.show()
+		else:
+			self.menubar.hide()
+
+	def on_toolbar_view(self, widget):
+		if widget.active: 
+			self.toolbar.show()
+		else:
+			self.toolbar.hide()
+
+	def on_status_view(self, widget):
+		if widget.active: 
+			self.statusbar.show()
+		else:
+			self.statusbar.hide()
+
 	def on_host_drag_data_get(self, widget, context, selection, target_type, time):
 		data = '\n'.join(['file://' + urllib.quote(os.path.join(self.host_cwd, item['filename'])) for item in self.get_host_selected_files()])
 		
@@ -503,6 +561,16 @@ class Aafm_GUI:
 	def process_queue(self):
 		task = self.process_queue_task()
 		gobject.idle_add(task.next)
+
+	def on_key_press(self, widget, event):
+		keyname = gtk.gdk.keyval_name(event.keyval)
+		#print "Key %s (%d) was pressed" % (keyname, event.keyval)
+		if(event.keyval==58): #:
+			self.entry.show()
+			self.statusbar.hide()
+		elif(event.keyval==65307): #ESC
+			self.entry.hide()
+			self.statusbar.show()
 	
 #	def process_queue_task(self):
 #		completed = 0

@@ -47,7 +47,7 @@ class TreeViewFile:
 		size_col.set_sort_column_id(2)
 
 		# TIMESTAMP
-		time_col = gtk.TreeViewColumn('Date modified')
+		time_col = gtk.TreeViewColumn('Last Modified')
 		self.tree_view.append_column(time_col)
 
 		time_col_renderer = gtk.CellRendererText()
