@@ -11,7 +11,7 @@ import datetime
 import stat
 import pwd
 import grp
-import urllib
+#import urllib
 
 if os.name == 'nt':
 	import win32api
@@ -32,6 +32,7 @@ class Aafm_GUI:
 	def __init__(self):
 		self.queue = []
 
+		self.hostName = socket.gethostname()
 		self.basedir = os.path.dirname(os.path.abspath(__file__))
 		self.showHidden = True # Show hidden files and folders
 		
@@ -42,6 +43,9 @@ class Aafm_GUI:
 			self.get_owner = self._get_owner
 			self.get_group = self._get_group
 
+		self.init_ui()
+
+	def init_ui(self):
 		# Build main window
 		self.window=gtk.Window()
 		self.window.set_title("File Manager")
@@ -142,8 +146,6 @@ class Aafm_GUI:
 		)
 		hostTree.connect('drag_data_get', self.on_host_drag_data_get)
 		
-		self.hostName = socket.gethostname()
-
 		# Progress bar
 		self.progress_bar = gtk.ProgressBar()
 
@@ -178,7 +180,6 @@ class Aafm_GUI:
             	self.entry.hide()
 
 	def host_navigate_callback(self, widget, path, view_column):
-		
 		row = path[0]
 		model = widget.get_model()
 		iter = model.get_iter(row)
@@ -564,45 +565,49 @@ class Aafm_GUI:
 
 	def on_key_press(self, widget, event):
 		keyname = gtk.gdk.keyval_name(event.keyval)
-		#print "Key %s (%d) was pressed" % (keyname, event.keyval)
+#		print "Key %s (%d) was pressed" % (keyname, event.keyval)
 		if(event.keyval==58): #:
 			self.entry.show()
 			self.statusbar.hide()
+			self.entry.grab_focus() 
 		elif(event.keyval==65307): #ESC
 			self.entry.hide()
 			self.statusbar.show()
-	
-#	def process_queue_task(self):
-#		completed = 0
-#		self.update_progress()
-#
-#		while len(self.queue) > 0:
-#			item = self.queue.pop(0)
-#			action, src, dst = item
-#
-#			if action == self.QUEUE_ACTION_COPY_TO_DEVICE:
-#				for func, args in self.aafm.generate_copy_to_device_tasks(src, dst):
-#					self.add_to_queue(self.QUEUE_ACTION_CALLABLE, func, args)
-#				self.add_to_queue(self.QUEUE_ACTION_CALLABLE, self.refresh_device_files, ())
-#			elif action == self.QUEUE_ACTION_COPY_FROM_DEVICE:
-#				for func, args in self.aafm.generate_copy_to_host_tasks(src, dst):
-#					self.add_to_queue(self.QUEUE_ACTION_CALLABLE, func, args)
-#				self.add_to_queue(self.QUEUE_ACTION_CALLABLE, self.refresh_host_files, ())
-#			elif action == self.QUEUE_ACTION_CALLABLE:
-#				src(*dst)
-#			elif action == self.QUEUE_ACTION_MOVE_IN_DEVICE:
-#				self.aafm.device_rename_item(src, dst)
-#				self.refresh_device_files()
-#			elif action == self.QUEUE_ACTION_MOVE_IN_HOST:
-#				shutil.move(src, dst)
-#				self.refresh_host_files()
-#
-#			completed += 1
-#			self.update_progress(float(completed) / float(completed + len(self.queue)))
-#
-#			yield True
-#
-#		yield False
+			self.host_treeViewFile.get_view().grab_focus() 
+		elif(event.keyval==65293): #Return
+			self.cmd=self.entry.get_text()
+
+			if(self.cmd[:4]==":cd "):
+				self.host_cwd = self.cmd[4:]
+				if(self.host_cwd==""):
+					self.host_cwd="/home/alex/"
+				self.refresh_host_files()
+
+			#FIXME send event ESC
+			self.entry.hide()
+			self.statusbar.show()
+			self.host_treeViewFile.get_view().grab_focus() 
+				
+	def process_queue_task(self):
+		completed = 0
+		self.update_progress()
+
+		while len(self.queue) > 0:
+			item = self.queue.pop(0)
+			action, src, dst = item
+
+			if action == self.QUEUE_ACTION_CALLABLE:
+				src(*dst)
+			elif action == self.QUEUE_ACTION_MOVE_IN_HOST:
+				shutil.move(src, dst)
+				self.refresh_host_files()
+
+			completed += 1
+			self.update_progress(float(completed) / float(completed + len(self.queue)))
+
+			yield True
+
+		yield False
 
 	def die_callback(self, widget, data=None):
 		self.destroy(widget, data)
