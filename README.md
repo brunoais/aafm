@@ -1,7 +1,7 @@
 yelt
 ====
 
-# Yetl File Manager #
+# Yelt File Manager #
 
 A  GTK-based file manager with vim key bidings
 

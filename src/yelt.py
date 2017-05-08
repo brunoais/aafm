@@ -108,18 +108,34 @@ class gui:
 		self.toolbar.set_style(gtk.TOOLBAR_ICONS)
 		
 		newtb = gtk.ToolButton(gtk.STOCK_NEW)
-		opentb = gtk.ToolButton(gtk.STOCK_OPEN)
-		savetb = gtk.ToolButton(gtk.STOCK_SAVE)
+		newtb.connect("clicked", self.on_host_create_directory_callback)
+
+#		opentb = gtk.ToolButton(gtk.STOCK_OPEN)
+#		savetb = gtk.ToolButton(gtk.STOCK_SAVE)
+
 		sep = gtk.SeparatorToolItem()
-		quittb = gtk.ToolButton(gtk.STOCK_QUIT)
+
+#		quittb = gtk.ToolButton(gtk.STOCK_QUIT)
+#		quittb.connect("clicked", gtk.main_quit)
 		
-		self.toolbar.insert(newtb, 0)
-		self.toolbar.insert(opentb, 1)
-		self.toolbar.insert(savetb, 2)
-		self.toolbar.insert(sep, 3)
-		self.toolbar.insert(quittb, 4)
+		self.upButton = gtk.ToolButton(gtk.STOCK_GO_UP);
+#		self.upButton.set_is_important(True)
+		self.upButton.set_sensitive(False)
+		self.upButton.connect("clicked", self.on_up_clicked)
 		
-		quittb.connect("clicked", gtk.main_quit)
+		homeButton = gtk.ToolButton(gtk.STOCK_HOME)
+		homeButton.set_is_important(True)
+		homeButton.connect("clicked", self.on_home_clicked)
+
+		self.toolbar.insert(self.upButton, -1)
+		self.toolbar.insert(homeButton, -1)
+		self.toolbar.insert(sep, -1)
+		self.toolbar.insert(newtb, -1)
+#		self.toolbar.insert(opentb, -1)
+#		self.toolbar.insert(savetb, -1)
+#		self.toolbar.insert(quittb, -1)
+		#refresh previous next toggle view
+		
 
 		# TreeView
 		self.host_treeViewFile = TreeViewFile(imageDir.get_pixbuf(), imageFile.get_pixbuf())
@@ -145,6 +161,8 @@ class gui:
 			gtk.gdk.ACTION_DEFAULT | gtk.gdk.ACTION_COPY | gtk.gdk.ACTION_MOVE
 		)
 		hostTree.connect('drag_data_get', self.on_host_drag_data_get)
+		
+#		hostTree.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 		
 		# Progress bar
 		self.progress_bar = gtk.ProgressBar()
@@ -176,8 +194,23 @@ class gui:
 		self.window.connect("destroy", gtk.main_quit)
 		self.window.show_all()
 
+            	self.menubar.hide()
             	self.progress_bar.hide()
             	self.entry.hide()
+
+
+	def on_home_clicked(self, widget):
+		self.host_cwd = os.path.realpath(os.path.expanduser('~'))
+		self.refresh_host_files()
+		self.upButton.set_sensitive(True)
+
+	def on_up_clicked(self, widget):
+		self.host_cwd = os.path.dirname(self.host_cwd)
+		self.refresh_host_files()
+		sensitive = True
+		if self.host_cwd == "/":
+			sensitive = False
+		self.upButton.set_sensitive(sensitive)
 
 	def host_navigate_callback(self, widget, path, view_column):
 		row = path[0]
@@ -540,9 +573,9 @@ class gui:
 			self.statusbar.hide()
 
 	def on_host_drag_data_get(self, widget, context, selection, target_type, time):
-		data = '\n'.join(['file://' + urllib.quote(os.path.join(self.host_cwd, item['filename'])) for item in self.get_host_selected_files()])
-		
-		selection.set(selection.target, 8, data)
+#		data = '\n'.join(['file://' + urllib.quote(os.path.join(self.host_cwd, item['filename'])) for item in self.get_host_selected_files()])
+#		selection.set(selection.target, 8, data)
+		pass
 
 	def on_host_drag_data_received(self, tree_view, context, x, y, selection, info, timestamp):
 		data = selection.data
@@ -600,6 +633,9 @@ class gui:
 				if(self.host_cwd==""):
 					self.host_cwd="/home/alex/"
 				self.refresh_host_files()
+
+			if(self.cmd[:2]==":q"):
+				pass
 
 			#FIXME send event ESC
 			self.entry.hide()
