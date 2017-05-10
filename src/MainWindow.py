@@ -2,6 +2,14 @@ import sys
 from PyQt4 import QtGui, QtCore
 from ListWidget import ListWidget
 
+#http://stackoverflow.com/questions/5435891/qt-breadcrumb-navigation
+#KUrlNavigator
+
+#http://www.qtcentre.org/archive/index.php/t-15739.html
+#https://groups.google.com/forum/#!topic/python_inside_maya/sKzq_l6v5hY
+#http://doc.qt.io/qt-4.8/graphicsview.html
+#https://forum.qt.io/topic/72252/pixmap-and-text-alignment-in-iconview/4
+
 class MainWindow(QtGui.QMainWindow):
 	def __init__(self):
 		super(MainWindow, self).__init__()
