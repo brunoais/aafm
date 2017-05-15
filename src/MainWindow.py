@@ -1,6 +1,7 @@
 import sys
 from PyQt4 import QtGui, QtCore
 from ListWidget import ListWidget
+from TerminalWidget import TerminalWidget
 
 #http://stackoverflow.com/questions/5435891/qt-breadcrumb-navigation
 #KUrlNavigator
@@ -9,6 +10,8 @@ from ListWidget import ListWidget
 #https://groups.google.com/forum/#!topic/python_inside_maya/sKzq_l6v5hY
 #http://doc.qt.io/qt-4.8/graphicsview.html
 #https://forum.qt.io/topic/72252/pixmap-and-text-alignment-in-iconview/4
+#http://stackoverflow.com/questions/41107202/pyqt-coloring-part-of-text-in-qlistwidget
+#http://pythoncentral.io/pyside-pyqt-tutorial-the-qlistwidget/
 
 class MainWindow(QtGui.QMainWindow):
 	def __init__(self):
@@ -23,9 +26,16 @@ class MainWindow(QtGui.QMainWindow):
 		#------------------------------------------
 		self.listWidget = ListWidget()
 		#------------------------------------------
+		# 
+		#------------------------------------------
+#		self.model = QtGui.QFileSystemModel()
+#		self.model.setRootPath("/home/alex/")
+#		self.listWidget.setModel_(self.model)
+		#------------------------------------------
 		# Actions
 		#------------------------------------------
-		home = QtGui.QAction(QtGui.QIcon("../res/icones/basic_home.svg"), "home", self)
+		self.home = QtGui.QAction(QtGui.QIcon("../res/icones/basic_home.svg"), "home", self)
+		self.home.triggered.connect(self.listWidget.setPath)
 
 		self.toggleView = QtGui.QAction(QtGui.QIcon("../res/icones/arrows_hamburger 2.svg"), "toggleView", self)
 		self.toggleView.triggered.connect(self.listWidget.toggleMode)
@@ -51,12 +61,16 @@ class MainWindow(QtGui.QMainWindow):
 		# ToolBar
 		#------------------------------------------
 		self.toolBar = self.addToolBar("File")
-		self.toolBar.addAction(home)
+		self.toolBar.addAction(self.home)
 		self.toolBar.addAction(self.toggleView)
 		self.toolBar.addAction(self.refreshAction)
 		self.toolBar.addAction(self.exitAction)
 		
 #		self.toolBar.actionTriggered[QAction].connect(self.toolbtnpressed)
+		#------------------------------------------
+		# Terminal
+		#------------------------------------------
+#		self.terminalWidget = TerminalWidget(self)
 		#------------------------------------------
 		# StatusBar
 		#------------------------------------------
@@ -67,6 +81,7 @@ class MainWindow(QtGui.QMainWindow):
 		layout = QtGui.QVBoxLayout()
 		layout.setMargin(0)
 		layout.addWidget(self.listWidget)
+#		layout.addWidget(self.terminalWidget)
 
 		self.centralWidget = QtGui.QWidget()
 		self.centralWidget.setLayout(layout)
