@@ -28,7 +28,7 @@ class TreeViewFile:
 		type_col.set_cell_data_func(type_col_renderer_pixbuf, self.render_dir_or_file)
 
 		# NAME
-		name_col = gtk.TreeViewColumn('Name')
+		name_col = gtk.TreeViewColumn('File name')
 		self.tree_view.append_column(name_col)
 		
 		name_col_renderer_text = gtk.CellRendererText()
@@ -47,7 +47,7 @@ class TreeViewFile:
 		size_col.set_sort_column_id(2)
 
 		# TIMESTAMP
-		time_col = gtk.TreeViewColumn('Last Modified')
+		time_col = gtk.TreeViewColumn('Date modified')
 		self.tree_view.append_column(time_col)
 
 		time_col_renderer = gtk.CellRendererText()
