@@ -13,6 +13,21 @@ So I decided to go ahead and build a little utility that would if not fix, at le
 
 ## Installing ##
 
+### Steps ###
+
+#### Install ####
+* Clone or Download aafm package
+* Change directory to package location
+* Download adb and copy to PATH
+** https://skia.googlesource.com/skia/+archive/cd048d18e0b81338c1a04b9749a00444597df394/platform_tools/android/bin/linux.tar.gz
+* Install: python setup.py install
+
+#### Uninstall ####
+* Change directory to package location
+* python setup.py install --record files.txt
+* cat files.txt | xargs rm -rf
+
+
 ### Requirements ###
 
 Python with PyGTK bindings, GTK, git, and the Android SDK.
