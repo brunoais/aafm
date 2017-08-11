@@ -13,20 +13,36 @@ So I decided to go ahead and build a little utility that would if not fix, at le
 
 ## Installing ##
 
-### Steps ###
+### Requirements ###
+* Python 2.x
+* PyGTK
+* git (optional)
+* adb v1.0.36 or less 
+	* via Android SDK
+	* Android Platform-Tools
+	* adb binary
 
-#### Install ####
+### Install ###
 * Clone or Download aafm package
+	* Git: git clone https://github.com/zymos/aafm.git
+	* Download [ZIP file](https://github.com/zymos/aafm/archive/master.zip)
 * Change directory to package location
-* Download adb and copy to PATH
-** https://skia.googlesource.com/skia/+archive/cd048d18e0b81338c1a04b9749a00444597df394/platform_tools/android/bin/linux.tar.gz
-* Install: python setup.py install
+	* cd aafm/
+* Download adb and install
+	* Download [Linux adb v1.0.36 binary](https://github.com/zymos/aafm/raw/master/adb/adb), then copy to PATH
+	* [Mac adb v1.0.36 binary](https://skia.googlesource.com/skia/+archive/cd048d18e0b81338c1a04b9749a00444597df394/platform_tools/android/bin/mac.tar.gz) (untested)
+	* or download an old version of Android SDK or Android Platform-Tools
+* Install: 
+	* python setup.py install
 
-#### Uninstall ####
+### Uninstall ###
 * Change directory to package location
 * python setup.py install --record files.txt
 * cat files.txt | xargs rm -rf
 
+
+
+## Install (old) ##
 
 ### Requirements ###
 
@@ -211,6 +227,7 @@ I'm by no means a GTK/Python/ADB/Android expert. I'm just learning so this proje
 
 In order to make your life a bit easier I'll roughly show what each file does:
 
+* **aafm** - shell script to execute aafm-gui.py
 * **Aafm.py** - a class that communicates with an Android device, using ADB via shell commands. Takes care of copying and reading files, listing and parsing directories, etc.
 * **aafm-gui.py** - this is the GTK front-end. Takes care of building the window with the host and device panels, and issuing instructions to Aafm when the user requests something to be done.
 * **TreeViewFile.py** - a utility class that encapsulates a GTKTreeView and some more things in order to show file listings.
@@ -218,8 +235,11 @@ In order to make your life a bit easier I'll roughly show what each file does:
 
 As you can see, an **aafm-cli.py** GUI counterpart is missing. There was one at the beginning but I didn't redo it when I rewrote most of the code from scratch. Feel free to... you know what, if you're interested in having a CLI version.
 
+
+## Tested On ##
 This was initially developed in an Ubuntu Linux 10.10 system. I thought it wouldn't work on other systems, but it seems people are using it in a lot of places though. Some environments where it's known to work:
 
+- Debian 7.0, 8.9
 - Ubuntu 10.10, 11.04, 11.10
 - Arch Linux
 - Windows (!!!)
@@ -230,4 +250,10 @@ This was initially developed in an Ubuntu Linux 10.10 system. I thought it would
 I'm now using Github's issue tracker to keep track of issues, bugs and wished-for features.
 
 If you'd like to have a certain feature or think you've found a bug that is not in the list, please add it to the issue tracker at https://github.com/sole/aafm/issues
+
+# notes #
+~/Downloads/platform-tools/adb -s ZY222XFMNT push "`echo 'a&b&c/'`" "`echo '/mnt/sdcard/'`"
+adb server version (32) doesn't match this client (39); killing...
+* daemon started successfully *
+a&b&c/: 2 files pushed.
 
