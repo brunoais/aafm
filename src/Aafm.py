@@ -4,34 +4,14 @@ import subprocess
 import time
 
 class Aafm:
-	def __init__(self, adb='./adb', host_cwd=None, device_cwd='/', device_serial=None):
-		
-                # def find_adb(program):
-                    # def is_exe(fpath):
-                        # return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-                    # fpath, fname = os.path.split(program)
-                    # if fpath:
-                        # if is_exe(program):
-                            # return program
-                    # else:
-                        # for path in os.environ["PATH"].split(os.pathsep):
-                            # path = path.strip('"')
-                            # exe_file = os.path.join(path, program)
-                            # if is_exe(exe_file):
-                                # return exe_file
-
-                    # return None
-
- 
-            
-                self.adb = adb
+	def __init__(self, adb='adb', host_cwd=None, device_cwd='/', device_serial=None):
+		self.adb = adb
 		self.host_cwd = host_cwd
 		self.device_cwd = device_cwd
 		self.device_serial = device_serial
-		self.busybox = False
+		self.ls_type = ''
 		self.connected_devices = []
-		
+
 		# The Android device should always use POSIX path style separators (/),
 		# so we can happily use os.path.join when running on Linux (which is POSIX)
 		# But we can't use it when running on Windows machines because they use '\\'
@@ -40,30 +20,43 @@ class Aafm:
 		# Not sure how much of a hack is this...
 		# Feel free to illuminate me if there's a better way.
 		pathmodule = __import__('posixpath')
-		
+
 		self._path_join_function = pathmodule.join
 		self._path_normpath_function = pathmodule.normpath
 		self._path_basename_function = pathmodule.basename
 
 		self.refresh_devices()
 
-        def execute(self, *args):
-                args_list = list(args)
-                command = ""
-                is_file_transfer = False
-                for i in range(len(args_list)):
-                        if args_list[i] == "push" or args_list[i] == "pull":
-                                is_file_transfer = True
-                        if args_list[i][0] == "/":
-                                args_list[i] = r'"' + args_list[i] + r'"'
-                                if is_file_transfer == False:
-                                        args_list[i] = args_list[i].replace(r" ",r"\ ")
-                                        args_list[i] = args_list[i].replace(r"'",r"\'")
-                        command = command + args_list[i] + " "
-                print command
-                proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-                return filter(None, [line.rstrip('\r\n') for line in proc.stdout])
-
+	def execute(self, *args):
+		args_list = list(args)
+		command = ""
+		is_file_transfer = False
+		for i in range(len(args_list)):
+			if args_list[i] == "push" or args_list[i] == "pull":
+				is_file_transfer = True
+			if args_list[i][0] == "/":
+				args_list[i] = r'"' + args_list[i] + r'"'
+				if is_file_transfer == False:
+					args_list[i] = args_list[i].replace(r" ",r"\ ")
+					args_list[i] = args_list[i].replace(r"'",r"\'")
+					args_list[i] = args_list[i].replace(r"(",r"\(")
+					args_list[i] = args_list[i].replace(r")",r"\)")
+					args_list[i] = args_list[i].replace(r"&",r"\&")
+					args_list[i] = args_list[i].replace(r"'",r"\'")
+					args_list[i] = args_list[i].replace(r"`",r"\`")
+					args_list[i] = args_list[i].replace(r"|",r"\|")
+					args_list[i] = args_list[i].replace(r";",r"\;")
+					args_list[i] = args_list[i].replace(r"<",r"\<")
+					args_list[i] = args_list[i].replace(r">",r"\>")
+					args_list[i] = args_list[i].replace(r"*",r"\*")
+					args_list[i] = args_list[i].replace(r"#",r"\#")
+					args_list[i] = args_list[i].replace(r"%",r"\%")
+					args_list[i] = args_list[i].replace(r"=",r"\=")
+					args_list[i] = args_list[i].replace(r"~",r"\~")
+			command = command + args_list[i] + " "
+		print command
+		proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+		return filter(None, [line.rstrip('\r\n') for line in proc.stdout])
 
 	def _adb(self, *args):
 		if self.device_serial is not None:
@@ -76,14 +69,14 @@ class Aafm:
 
 	def set_host_cwd(self, cwd):
 		self.host_cwd = cwd
-	
+
 
 	def set_device_cwd(self, cwd):
 		self.device_cwd = cwd
 
 	def set_device_serial(self, serial):
 		self.device_serial = serial
-		self.probe_for_busybox()
+		self.probe_for_ls_type()
 
 	def get_device_serial(self):
 		return self.device_serial
@@ -107,9 +100,14 @@ class Aafm:
 				if line and not line.startswith('List of devices attached')]
 
 		for serial, kind in serials:
-			build_prop = self.execute(self.adb, '-s', serial,
-					'shell', 'cat', '/system/build.prop')
-			props = dict(x.strip().split('=', 1) for x in build_prop if '=' in x)
+			props = dict()
+			suexists = self.execute(self.adb, '-s', serial,
+					'shell', 'which', 'su')
+			if suexists:
+				build_prop = self.execute(self.adb, '-s', serial,
+						'shell', 'su', '-c', 'cat', '/system/build.prop')
+				props = dict(x.strip().split('=', 1) for x in build_prop if '=' in x)
+
 			yield (serial, props.get('ro.product.model', serial))
 
 	def get_device_file_list(self):
@@ -117,24 +115,39 @@ class Aafm:
 
 	def get_free_space(self):
 		lines = self.adb_shell('df', self.device_cwd)
+		free = '-'
 		if len(lines) != 2 or not lines[0].startswith('Filesystem'):
-			return '-'
+			return free
 
 		splitted = lines[1].split()
-		if len(splitted) != 5:
-			return '-'
+		if len(splitted) == 5:
+			mountpoint, size, used, free, blksize = splitted
+		if len(splitted) == 6:
+			device, size, used, free, percentage, mountpoint = splitted
+			lines = self.adb_shell('df', '-h', self.device_cwd)
+			splitted = lines[1].split()
+			if len(splitted) == 6:
+				device, size, used, free, percentage, mountpoint = splitted
 
-		mountpoint, size, used, free, blksize = splitted
 		return free
 
-	def probe_for_busybox(self):
-		self.busybox = any(line.startswith('BusyBox')
-				for line in self.adb_shell('ls', '--help'))
+	def probe_for_ls_type(self):
+		if any(line.startswith('BusyBox')
+				for line in self.adb_shell('ls', '--help')):
+			self.ls_type = 'busybox'
+		elif any((line.find('toybox') != -1)
+				for line in self.adb_shell('stat', '/system/bin/ls')):
+			self.ls_type = 'toybox'
+		else:
+			self.ls_type = ''
 
 	def device_list_files_parsed(self, device_dir):
-		if self.busybox:
+		if self.ls_type == 'busybox':
 			command = ['ls', '-l', '-A', '-e', '--color=never', device_dir]
 			pattern = re.compile(r"^(?P<permissions>[dl\-][rwx\-]+)\s+(?P<hardlinks>\d+)\s+(?P<owner>[\w_]+)\s+(?P<group>[\w_]+)\s+(?P<size>\d+)\s+(?P<datetime>\w{3} \w{3}\s+\d+\s+\d{2}:\d{2}:\d{2} \d{4}) (?P<name>.+)$")
+		elif self.ls_type == 'toybox':
+			command = ['ls', '-l', '-A', device_dir]
+			pattern = re.compile(r"^(?P<permissions>[dl\-][rwx\-]+)\s+(?P<hardlinks>\d+)\s+(?P<owner>[\w_]+)\s+(?P<group>[\w_]+)\s+(?P<size>\d+)\s+(?P<datetime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) (?P<name>.+)$")
 		else:
 			command = ['ls', '-l', '-a', device_dir]
 			pattern = re.compile(r"^(?P<permissions>[dl\-][rwx\-]+) (?P<owner>\w+)\W+(?P<group>[\w_]+)\W*(?P<size>\d+)?\W+(?P<datetime>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) (?P<name>.+)$")
@@ -144,7 +157,7 @@ class Aafm:
 		for line in self.adb_shell(*command):
 			line = line.rstrip()
 			match = pattern.match(line)
-			
+
 			if match:
 				permissions = match.group('permissions')
 				owner = match.group('owner')
@@ -153,20 +166,19 @@ class Aafm:
 				if fsize is None:
 					fsize = 0
 				filename = match.group('name')
-				
-				if self.busybox:
+
+				if self.ls_type == 'busybox':
 					date_format = "%a %b %d %H:%M:%S %Y"
 				else:
 					date_format = "%Y-%m-%d %H:%M"
 				timestamp = time.mktime((time.strptime(match.group('datetime'), date_format)))
-				
+
 				is_directory = permissions.startswith('d')
 
 				if permissions.startswith('l'):
 					filename, target = filename.split(' -> ')
 					is_directory = self.is_device_file_a_directory(target)
-
-				entries[filename] = { 
+				entries[filename] = {
 					'is_directory': is_directory,
 					'size': fsize,
 					'timestamp': timestamp,
@@ -176,7 +188,8 @@ class Aafm:
 				}
 
 			else:
-				print line, "wasn't matched, please report to the developer!"
+				if not line.startswith('total '):
+					print line, "wasn't matched, please report to the developer!"
 
 		return entries
 
