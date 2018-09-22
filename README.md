@@ -5,7 +5,7 @@ aafm
 
 A command line + GUI (GTK based) Android ADB-based file manager
 
-![Screenshot](http://sole.github.com/aafm/screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/zymos/aafm/master/screenshot.png)
 
 Recent Android releases (Honeycomb / 3.0+) replace the older USB mount protocol with the use of MTP (Massive Transfer Protocol). Unfortunately this is still very buggy and doesn't work as it should in any machine I have tested (and heard of): system slowing down to a halt when transferring large number of files, files which are there but cannot be seen by the computer... etc.
 
@@ -17,7 +17,7 @@ So I decided to go ahead and build a little utility that would if not fix, at le
 * Python 2.x
 * PyGTK
 * git (optional)
-* adb v1.0.36 or less 
+* adb > v1.0.36 
 	* via Android SDK
 	* Android Platform-Tools
 	* adb binary
@@ -29,11 +29,11 @@ So I decided to go ahead and build a little utility that would if not fix, at le
 * Change directory to package location
 	* cd aafm/
 * Download adb and install
-	* Download [Linux adb v1.0.36 binary](https://github.com/zymos/aafm/raw/master/adb/adb), then copy to PATH
-	* [Mac adb v1.0.36 binary](https://skia.googlesource.com/skia/+archive/cd048d18e0b81338c1a04b9749a00444597df394/platform_tools/android/bin/mac.tar.gz) (untested)
-	* or download an old version of Android SDK or Android Platform-Tools
+	* https://developer.android.com/studio/command-line/adb
+	* or via SDK
 * Install: 
 	* python setup.py install
+	* or just run from directory
 
 ### Uninstall ###
 * Change directory to package location
@@ -41,129 +41,10 @@ So I decided to go ahead and build a little utility that would if not fix, at le
 * cat files.txt | xargs rm -rf
 
 
+### Using it ###
 
-## Install (old) ##
-
-### Requirements ###
-
-Python with PyGTK bindings, GTK, git, and the Android SDK.
-
-Getting these should be fairly straightforward if you're running any decent Linux distribution. If you're using Windows I believe there are next-next-next installers for everything. This leaves us with the third option which is Mac OS. Up until recently there wasn't an easy way to get any PyGTK software working in Mac OS, but turns out you can now download a binary build of PyGTK for Mac OS with which aafm works quite well!
-
-It can be downloaded from http://afb.users.sourceforge.net/zero-install/PyGTK.pkg ([more info](http://python.6.n6.nabble.com/Testing-PyGTK-installer-for-Mac-OS-X-td1948270.html)). Simply run the installer once downloaded, and then follow the instructions below as if you were running a proper Linux system.
-
-One note though: there are a few hiccups with the Mac version, but they are mostly cosmetic and won't prevent you from enjoying the software. Feel free to help correcting them if you have the know-how!
-
-### Clone repository ###
-
-Clone this repository to a place you fancy. For example, your Applications folder.
-
-```git clone git://github.com/sole/aafm.git ~/Applications/aafm```
-
-### Install the Android SDK ###
-
-If it's not installed yet, download the SDK from its page and follow its instructions: http://developer.android.com/sdk/index.html
-
-Basically (at least in Linux) just download a zip file and unpack it to a known location. In my case it's ```~/Applications/android-sdk-linux_86```. Once that is done, you need to make sure that the ADB tool is readily accessible from a shell (which is what **aafm** uses internally).
-
-So to try that out, open a new terminal and type ```adb```. If it works, you should get a long help message that starts with something like ```Android Debug Bridge version 1.0.26```. If it doesn't work, you'll get something akin to ```adb: command not found```.
-
-In case it doesn't work, you need to add the path to ADB to the environment PATH variable. In Linux this is done by editing a file called ```.bashrc``` in your home folder (```.bash_profile``` in Mac OS). Locate a line that looks like ```PATH=$PATH``` and make it look like this:
-
-    PATH=$PATH:~/Applications/android-sdk-linux_86/platform-tools
-
-The line above appends ADB's path to whatever value $PATH held before. The path might be different, according to wherever you've installed the Android SDK.
-
-For more information on ADB and a list of its features, read over here: http://developer.android.com/guide/developing/tools/adb.html
-
-Also, I haven't tried it myself, but it seems that it's possible to download and build a reduced subset of the Android SDK only, including ADB and a few more tools. This doesn't require Java installed in the system. This page describes how: http://lackingrhoticity.blogspot.com/2010/02/how-to-build-adb-android-debugger.html
-
-### Close terminal and open it again ###
-
-So the changes to the PATH get current. In Mac OS you might need to log in and out too.
-
-### Configure udev rules (if in Linux) ###
-
-You need to let the system know that when you connect your USB device (i.e. the tablet) it should allow you, as a non-root user, to access it. If you don't do that, you'll get a "Insufficient permissions for device" error.
-
-This is done by adding a new file that contains so called udev rules.
-
-For example, in Ubuntu 10.10 you would add a file in ```/etc/udev/rules.d/51-android.rules``` with the following content:
-
-    # Samsung
-    SUBSYSTEM=="usb", SYSFS{idVendor}=="04e8", MODE="0777"
-
-You can find out the "idVendor" value by running lsusb in a terminal. That will output a list of the currently connected USB devices, such as for example this:
-
-```
-Bus 004 Device 006: ID 05ac:8218 Apple, Inc. 
-Bus 004 Device 003: ID 0a5c:4500 Broadcom Corp. BCM2046B1 USB 2.0 Hub (part of BCM2046 Bluetooth)
-Bus 004 Device 002: ID 05ac:0237 Apple, Inc. Internal Keyboard/Trackpad (ISO)
-Bus 004 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-Bus 001 Device 004: ID 18d1:4e12 Google Inc. Nexus One Phone (Debug)
-Bus 001 Device 002: ID 05ac:8507 Apple, Inc. 
-Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-```
-
-Since I'd like to add support for browsing my Nexus One phone (because *aafm* works with every Android device that adb can connect to), I just need to look at the device with id *18d1:4e12*, and add the following line to the udev rules file:
-
-```
-SUBSYSTEM=="usb", SYSFS{idVendor}=="18d1", MODE="0666"
-```
-
-Save it, and then change the file permissions:
-
-    chmod a+r /etc/udev/rules.d/51-android.rules
-
-To make sure it worked, connect the device and try to run ```adb devices``` in a terminal. If it's working properly, you should see a list more or less like this:
-
-    List of devices attached 
-    4342354131444B534652	device
-
-The numbers aren't important, the important bit is that you see ```device``` instead of ```??????```.
-
-If it isn't, you might need to either disconnect the device and try again, or reload udev so that the rules are actually loaded. Try with this:
-
-    sudo /etc/init.d/udev restart
-
-If everything else fails, try to log in and out again, or maybe even restart the system.
-
-More information on udev rules and Android can be found on the official Android development guide: http://developer.android.com/guide/developing/device.html
-
-
-### Enable Debug mode in the device ###
-
-Go to _Settings → Applications → Development_ and make sure the USB debugging checkbox is ticked. You might get a scary warning saying debugging allows you to do nasty things--just ignore it.
-
-### Execute aafm ###
-
-To execute it, cd to the place where it's been cloned:
-
-    cd ~/Applications/aafm/src/
-
-And simply execute it:
-
-    ./aafm-gui.py
-
-If for some odd reason it has lost the executable permission, you can add it:
-
-    chmod +x ./aafm-gui.py
-
-Or simply execute it using Python:
-
-    python ./aafm-gui.py
-
-Once you're satisfied it's working, you can also make a launcher or add it to your Gnome menu, of course!
-
-## Using it ##
-
-If everything works (and why shouldn't it?) you should get a window divided in two panels. The left side represents your host computer, and initially should show the files of the aafm directory, since you launched it from there. The right side represents your Android device's files --so it needs to be connected to the computer, and _USB debugging_ must be enabled in the device.
-You can navigate just as you would do with your favourite file explorer. Files can be dragged from one to another panel, directories created, and files renamed (hint: right click and explore the options the contextual menu offers you!). You can also drag from Nautilus (in GNOME) into the device panel, to copy files to the device, or drag _to_ Nautilus, for copying files from the device.
-
-Be warned that currently the progress reporting is a bit hackish and with large files it will appear as if the window has got frozen. It hasn't--it's just waiting for the ADB transfer to finish. In the future this should be fixed, but I haven't come up with the best solution yet.
-
+* Execute: aafm
+	* Should be that simple
 
 ## License ##
 
@@ -175,6 +56,11 @@ You can also make your changes public even if you don't plan on redistributing t
 
 
 ## Change log ##
+2018 09 22
+* Supports versions of adb > 1.0.36
+* Supports direcories with special chars
+* Displays hidden files (optional)
+* Better executable
 
 2012 09 25 - **r5**
 
@@ -220,6 +106,7 @@ Many interesting bug fixes and new features thanks to the work of Norman Rasmuss
 - [FamFamFam icons](http://www.famfamfam.com/lab/icons/)
 - XDS with PyGTK [tutorial](http://rodney.id.au/dev/gnome/an-xds-example)
 - Issues and patches from [Toby Collett](https://github.com/thjc), [Peter Sinnott](https://github.com/psinnott) and [Alexalex89](https://github.com/Alexalex89).
+- Updates Xerus2000, zymos
 
 ## Hacking ##
 
@@ -251,9 +138,5 @@ I'm now using Github's issue tracker to keep track of issues, bugs and wished-fo
 
 If you'd like to have a certain feature or think you've found a bug that is not in the list, please add it to the issue tracker at https://github.com/sole/aafm/issues
 
-# notes #
-~/Downloads/platform-tools/adb -s ZY222XFMNT push "`echo 'a&b&c/'`" "`echo '/mnt/sdcard/'`"
-adb server version (32) doesn't match this client (39); killing...
-* daemon started successfully *
-a&b&c/: 2 files pushed.
+
 
