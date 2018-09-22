@@ -17,20 +17,24 @@ So **aafm** uses Android Debug protocal.  Using ADB (one of the command line too
 * Python 2.x
 * PyGTK
 * git (optional)
-* adb > v1.0.36 
-	* via Android SDK
-	* Android Platform-Tools
-	* adb binary
+* adb (version > 1.0.36)
+	* Install via Android Studio https://developer.android.com/studio/ (Very large download)
+	* or SDK tools https://developer.android.com/studio (Also a large download)
+	* or Android Platform-Tools https://developer.android.com/studio/releases/platform-tools (recomended)
+	* or minimal requirement, adb binary (Version > 1.0.36) 
 
 ### Install ###
+* Download adb and install
+	* Only adb is required, but can be aquired via
+	* Android Studio https://developer.android.com/studio/ (Very large download)
+	* or SDK tools https://developer.android.com/studio (Also a large download)
+	* or Android Platform-Tools https://developer.android.com/studio/releases/platform-tools (recomended)
+	* or minimal requirement, adb binary (Version > 1.0.36) 
 * Clone or Download aafm package
 	* Git: git clone https://github.com/zymos/aafm.git
 	* Download [ZIP file](https://github.com/zymos/aafm/archive/master.zip)
 * Change directory to package location
 	* cd aafm/
-* Download adb and install
-	* https://developer.android.com/studio/command-line/adb
-	* or via Android SDK, Android Platform-Tools, or adb binary
 * Install: 
 	* python setup.py install
 	* or just run it from the directory
