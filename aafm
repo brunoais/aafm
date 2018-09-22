@@ -3,6 +3,16 @@
 executable=""
 site_path=""
 
+#Get scripts location, for execution
+SOURCE=$0
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
+
+
 #Check the correct name for python2 interpreter, assume no one uses in distro with python
 #version lower than 2.5.0
 
@@ -59,9 +69,9 @@ elif [ -e `echo "${site_path}/aafm/aafm-gui.py" | sed -e 's#/lib/#/local/lib/#'`
 elif [ -e "~/Applications/aafm/src/aafm-gui.py" ]; then
 	echo "Running: $executable ~/Applications/aafm/src/aafm-gui.py $@"
 	$executable "~/Applications/aafm/src/aafm-gui.py" "$@"
-elif [ -e "src/aafm-gui.py" ]; then
-	echo "Running: $executable src/aafm-gui.py $@"
-	$executable "src/aafm-gui.py" "$@"
+elif [ -e "${SCRIPT_DIR}/src/aafm-gui.py" ]; then
+	echo "Running: $executable ${SCRIPT_DIR}/src/aafm-gui.py $@"
+	$executable "${SCRIPT_DIR}/src/aafm-gui.py" "$@"
 else
 	echo "Error: aafm-gui.py not found"
 	exit 1
