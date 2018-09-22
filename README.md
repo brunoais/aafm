@@ -7,9 +7,9 @@ A command line + GUI (GTK based) Android ADB-based file manager
 
 ![Screenshot](https://raw.githubusercontent.com/zymos/aafm/master/screenshot.png)
 
-Recent Android releases (Honeycomb / 3.0+) replace the older USB mount protocol with the use of MTP (Massive Transfer Protocol). Unfortunately this is still very buggy and doesn't work as it should in any machine I have tested (and heard of): system slowing down to a halt when transferring large number of files, files which are there but cannot be seen by the computer... etc.
+Android uses of MTP (Massive Transfer Protocol) for file transfers. Unfortunately this is still very buggy and doesn't work well: system slowing down to a halt when transferring large number of files, files which are there but cannot be seen by the computer... etc.
 
-So I decided to go ahead and build a little utility that would if not fix, at least alleviate the pain of using Honeycomb devices. **aafm** uses ADB (one of the command line tools provided with the official Android SDK) for communicating with the Android device. This is the same method that IDEs implement.
+So **aafm** uses Android Debug protocal.  Using ADB (one of the command line tools provided with the official Android SDK) for communicating with the Android device.  Making it a simple file manager to transfer files.
 
 ## Installing ##
 
@@ -30,16 +30,18 @@ So I decided to go ahead and build a little utility that would if not fix, at le
 	* cd aafm/
 * Download adb and install
 	* https://developer.android.com/studio/command-line/adb
-	* or via SDK
+	* or via Android SDK, Android Platform-Tools, or adb binary
 * Install: 
 	* python setup.py install
-	* or just run from directory
+	* or just run it from the directory
+
+### Enable Android Debug on Phone ###
+* https://developer.android.com/studio/debug/dev-options
 
 ### Uninstall ###
 * Change directory to package location
 * python setup.py install --record files.txt
 * cat files.txt | xargs rm -rf
-
 
 ### Using it ###
 
@@ -54,13 +56,13 @@ This software is licensed under a GPL V3 license. Please read the accompanying L
 
 You can also make your changes public even if you don't plan on redistributing this application, okay? Sharing is good! :-)
 
-
 ## Change log ##
 2018 09 22
 * Supports versions of adb > 1.0.36
 * Supports direcories with special chars
 * Displays hidden files (optional)
 * Better executable
+* Update screenshot
 
 2012 09 25 - **r5**
 
