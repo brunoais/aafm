@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component type="desktop">
+  <id>com.github.sole.aafm.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  <name>Android ADB File Manager</name>
+  <name xml:lang="pt_BR">Android ADB File Manager</name>
+  <summary>File manager of Android ADB</summary>
+  <summary xml:lang="pt_BR">Gerenciador de arquivos do Android ADB</summary>
+  <description>
+    <p>File manager of Android ADB</p>
+    <p xml:lang="pt_BR">Gerenciador de arquivos do Android ADB</p>
+  </description>
+  <url type="homepage">https://github.com/sole/aafm/</url>
+  <url type="bugtracker">https://github.com/sole/aafm/issues</url>
+  <url type="help">https://github.com/sole/aafm/issues</url>
+  <url type="donation">https://github.com/sole/aafm/</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Screenshot of app</caption>
+      <caption xml:lang="pt_BR">Tela do App</caption>
+      <image>https://camo.githubusercontent.com/c6e8f1ee524620bc1f2db675ddfeb42e5dc665be/687474703a2f2f736f6c652e6769746875622e636f6d2f6161666d2f73637265656e73686f742e706e67</image>
+    </screenshot>
+  </screenshots>
+  <project_group>anbox</project_group>
+  <provides>
+    <binary>aafm</binary>
+  </provides>
+  <releases>
+    <release version="1.0" date="2020-08-17"/>
+  </releases>
+  <content_rating type="oars-1.0" />
+</component>
+
