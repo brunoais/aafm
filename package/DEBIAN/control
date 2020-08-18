@@ -1,11 +1,11 @@
 Package: aafm
-Version: 1.0
+Version: 0.0.5
 Installed-Size: 220
 Maintainer: sole <crash.eddie123@gmail.com>
 Section: utils
 Architecture: all
 Priority: optional
-Depends: 
+Depends: python, adb, fastboot
 Homepage: https://github.com/sole/aafm/
 Description: Gerenciador de arquivos do Android ADB
  Gerenciador de arquivos do Android ADB
